@@ -147,6 +147,26 @@ const moviesMock = [
 	}
 ];
 
+
+//no hacemos que llege a los servicios solo a las rutas
+// eso con sinon y proxiquire
+function filteredMoviesMock(tag) {
+	return moviesMock.filter(movie => movie.tags.includes(tag))
+}
+
+//llamamos a los servicios
+class MoviesServiceMock {
+	async getMovies() {
+		return Promise.resolve(moviesMock)
+	}
+
+	async createMovie() {
+		return Promise.resolve(moviesMock[0]);
+	}
+}
+
 module.exports = {
-	moviesMock
+	moviesMock,
+	filteredMoviesMock,
+	MoviesServiceMock
 };

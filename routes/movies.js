@@ -1,30 +1,55 @@
 const express = require('express');
-//mocks archivos de datos falsos
-const { moviesMock } = require('../utils/mocks/movies');
+const slash = require('express-slash');
+const MoviesService = require('../services/movies.js');
+
+const {
+    movieIdSchema,
+    createMovieSchema,
+    updateMovieSchema,
+} = require('../utils/schemas/movies');
+
+const validationHandler = require('../utils/middlewares/validationHandler');
 
 function moviesApi(app) {
-    const router = express.Router();
-    app.use("/api/movies", router)
+    // Because you're the type of developer who cares about this sort of thing!
+    app.enable('strict routing');
 
-    //lo siguiente es codigo asincrono siempre
-    router.get("/", async function(req, res, next) {
+    // Create the router using the same routing options as the app.
+    const router = express.Router({
+        caseSensitive: app.get('case sensitive routing'),
+        strict: app.get('strict routing')
+    });
+
+    // Add the `slash()` middleware after your app's `router`, optionally specify
+    // an HTTP status code to use when redirecting (defaults to 301).
+    app.use("/api/movies", router)
+    app.use(slash());
+
+    const moviesService = new MoviesService()
+
+    router.get("/", async function (req, res, next) {
+        //viene como consulta ? y podemos concatenar
+        const { tags } = req.query;
         try {
-            const movies = await Promise.resolve(moviesMock);
-            
+            const movies = await moviesService.getMovies({ tags });
+            // throw new Error('Error getting movies');
+
             res.status(200).json({
                 data: movies,
                 message: 'movies listed'
             })
-            
+
         } catch (err) {
             next(err);
         }
     });
-    
+
     // Metodo GET
-    router.get("/:movieId", async function (req, res, next) {
+    router.get("/:movieId", validationHandler({ movieId: movieIdSchema }, 'params'), async function (req, res, next) {
+        //viene en la url, como parametro en el request
+        const { movieId } = req.params
         try {
-            const movie = await Promise.resolve(moviesMock[0]);
+            const movie = await moviesService.getMovie({ movieId });
 
             res.status(200).json({
                 data: movie,
@@ -37,9 +62,11 @@ function moviesApi(app) {
     });
 
     //Metodo POST
-    router.post("/", async function (req, res, next) {
+    router.post("/", validationHandler(createMovieSchema), async function (req, res, next) {
+        const { body: movie } = req;
+
         try {
-            const createdMovieId = await Promise.resolve(moviesMock[0].id);
+            const createdMovieId = await moviesService.createMovie({ movie });
 
             res.status(201).json({
                 data: createdMovieId,
@@ -52,9 +79,11 @@ function moviesApi(app) {
     });
 
     //Metodo PUT
-    router.put("/:movieId", async function (req, res, next) {
+    router.put("/:movieId", validationHandler({ movieId: movieIdSchema }, 'params'), validationHandler(updateMovieSchema), async function (req, res, next) {
+        const { body: movie } = req;
+        const { movieId } = req.params
         try {
-            const updatedMovieId = await Promise.resolve(moviesMock[0].id);
+            const updatedMovieId = await moviesService.updateMovie({ movieId, movie });
 
             res.status(200).json({
                 data: updatedMovieId,
@@ -65,10 +94,29 @@ function moviesApi(app) {
             next(err);
         }
     });
-    //Metodo DELETE
-    router.delete("/:movieId", async function (req, res, next) {
+
+    //Metodo PATCH
+    router.patch("/:movieId", validationHandler({ movieId: movieIdSchema }, 'params'), async function (req, res, next) {
+        const { body: movie } = req;
+        const { movieId } = req.params
         try {
-            const deletedMovieId = await Promise.resolve(moviesMock[0].id);
+            const modifiedMovieId = await moviesService.modifyMovieId({ movieId, movie });
+
+            res.status(200).json({
+                data: modifiedMovieId,
+                message: 'movie modfied'
+            })
+
+        } catch (err) {
+            next(err);
+        }
+    });
+    //Metodo DELETE
+    router.delete("/:movieId", validationHandler({ movieId: movieIdSchema }, 'params'), async function (req, res, next) {
+        const { movieId } = req.params
+
+        try {
+            const deletedMovieId = await moviesService.deleteMovie({ movieId });
 
             res.status(200).json({
                 data: deletedMovieId,
