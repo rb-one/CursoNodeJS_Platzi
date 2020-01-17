@@ -31,7 +31,6 @@ describe('routes - movies', function () {
             });
         });
     });
-
     //test get /:movieId
     describe('GET /movies/:movieId', function () {
         it('should respond with status 200 testing one movie', function (done) {
@@ -41,6 +40,4 @@ describe('routes - movies', function () {
                 .expect(200, done);
         });
     });
-
 });
-
