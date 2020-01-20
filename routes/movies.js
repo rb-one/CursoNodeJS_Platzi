@@ -10,6 +10,12 @@ const {
 
 const validationHandler = require('../utils/middlewares/validationHandler');
 
+const cacheResponse = require('../utils/cacheResponse');
+const {
+    FIVE_MINUTES_IN_SECONDS,
+    SIXTY_MINUTES_IN_SECONDS
+} = require('../utils/time')
+
 function moviesApi(app) {
     // Because you're the type of developer who cares about this sort of thing!
     app.enable('strict routing');
@@ -28,7 +34,9 @@ function moviesApi(app) {
     const moviesService = new MoviesService()
 
     router.get("/", async function (req, res, next) {
-        //viene como consulta ? y podemos concatenar
+
+        cacheResponse(res, FIVE_MINUTES_IN_SECONDS);
+
         const { tags } = req.query;
         try {
             const movies = await moviesService.getMovies({ tags });
@@ -45,21 +53,25 @@ function moviesApi(app) {
     });
 
     // Metodo GET
-    router.get("/:movieId", validationHandler({ movieId: movieIdSchema }, 'params'), async function (req, res, next) {
-        //viene en la url, como parametro en el request
-        const { movieId } = req.params
-        try {
-            const movie = await moviesService.getMovie({ movieId });
+    router.get(
+        "/:movieId",
+        validationHandler({ movieId: movieIdSchema }, 'params'), 
+        async function (req, res, next) {
+            cacheResponse(res, SIXTY_MINUTES_IN_SECONDS);
+            //viene en la url, como parametro en el request
+            const { movieId } = req.params
+            try {
+                const movie = await moviesService.getMovie({ movieId });
 
-            res.status(200).json({
-                data: movie,
-                message: 'movie retrieved'
-            })
+                res.status(200).json({
+                    data: movie,
+                    message: 'movie retrieved'
+                })
 
-        } catch (err) {
-            next(err);
-        }
-    });
+            } catch (err) {
+                next(err);
+            }
+        });
 
     //Metodo POST
     router.post("/", validationHandler(createMovieSchema), async function (req, res, next) {
