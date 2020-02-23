@@ -3,30 +3,34 @@ const { BasicStrategy } = require('passport-http');
 const boom = require('@hapi/boom');
 const bcrypt = require('bcrypt');
 
-const UserService = require('../../../services/users');
+const UsersService = require('../../../services/users');
 
+// para implementar la estrategia hacemos uso de Passport.use
 passport.use(
-    new BasicStrategy(async function (email, password, cb) {
-        const userService = new UserService();
+    new BasicStrategy(async (email, password, cb) => {
+        const userService = new UsersService();
 
+        // vamos a verificar si el usurio existe o no
         try {
             const user = await userService.getUser({ email });
 
             if (!user) {
                 return cb(boom.unauthorized(), false);
+
             }
 
             if (!(await bcrypt.compare(password, user.password))) {
                 return cb(boom.unauthorized(), false);
             }
 
+            // antes de la validación, eliminamos el password del objeto user
+            // así nos aseguramos que ahí en adelante en el uso de la aplicación no sea visible
+            // el password del usuario
             delete user.password;
 
             return cb(null, user);
-            //cb(error nulo, usuario checked)
-
-        } catch (error) {
-            return cb(error)
+        } catch (err) {
+            return cb(err);
         }
     })
 );

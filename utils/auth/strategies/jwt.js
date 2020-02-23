@@ -1,12 +1,12 @@
 const passport = require('passport');
-const { sStrategy, ExtractJwt } = require('passport-jwt');
+const { Strategy, ExtractJwt } = require('passport-jwt');
 const boom = require('@hapi/boom');
 
 const UserService = require('../../../services/users');
 const { config } = require('../../../config');
 
 passport.use(
-    new sStrategy({
+    new Strategy({
         secretOrKey: config.authJwtSecret,
         jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken()
     },
